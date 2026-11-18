@@ -2,6 +2,18 @@
 
 Render any Rubik's cube scramble (3x3) to a PNG — pure Python, numpy + Pillow.
 
+## Examples
+
+![Rendered scrambled cube](docs/scramble.png)
+
+`./rubik_render.py "R U F' U2 B' L D R2 U' L2 F2 D2 B2 R' U'" --size 1200`
+
+`--steps` renders a contact sheet with the cube after each successive move:
+
+![Contact sheet, one frame per move](docs/steps.png)
+
+## Usage
+
 ```
 ./rubik_render.py "R U F' U2 B' L D R2 U'"              # -> cube.png (1024px, labelled)
 ./rubik_render.py "R U F' U2 B' L D R2 U'" --size 1600 -o big.png
