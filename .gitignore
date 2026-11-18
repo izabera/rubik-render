@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+/cube.png
+/steps.png
