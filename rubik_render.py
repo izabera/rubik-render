@@ -262,6 +262,11 @@ def make_background(w: int, h: int, flat=None) -> Image.Image:
 
 class Camera:
     def __init__(self, yaw: float, pitch: float, dist: float, half: float):
+        if dist <= half * math.sqrt(3.0) * 1.05:
+            raise ValueError(
+                f"camera distance {dist:g} is too close (camera inside the cube); "
+                f"use at least {half * math.sqrt(3.0) * 1.05:.1f}"
+            )
         yr, pr = math.radians(yaw), math.radians(pitch)
         direction = np.array(
             [math.cos(pr) * math.sin(yr), math.sin(pr), math.cos(pr) * math.cos(yr)]
@@ -269,8 +274,10 @@ class Camera:
         self.pos = direction * dist
         self.fwd = -self.pos / np.linalg.norm(self.pos)
         up_ref = np.array([0.0, 1.0, 0.0])
-        self.right = np.cross(self.fwd, up_ref)
-        self.right /= np.linalg.norm(self.right)
+        right = np.cross(self.fwd, up_ref)
+        if np.linalg.norm(right) < 1e-6:   # camera looking straight up/down
+            right = np.cross(self.fwd, np.array([0.0, 0.0, -1.0]))
+        self.right = right / np.linalg.norm(right)
         self.up = np.cross(self.right, self.fwd)
         self.up /= np.linalg.norm(self.up)
         self.half = half
@@ -489,15 +496,19 @@ def main(argv=None) -> int:
 
     out = args.out or ("steps.png" if args.steps else "cube.png")
 
-    if args.steps:
-        img = render_steps(tokens, size=args.size, ss=args.ss, yaw=args.yaw,
-                           pitch=args.pitch, dist=args.dist)
-    else:
-        cube = Cube(3)
-        cube.scramble(text)
-        img = render_cube(cube, size=args.size, ss=args.ss, yaw=args.yaw,
-                          pitch=args.pitch, dist=args.dist, bg=bg,
-                          label=None if args.no_label else text.strip())
+    try:
+        if args.steps:
+            img = render_steps(tokens, size=args.size, ss=args.ss, yaw=args.yaw,
+                               pitch=args.pitch, dist=args.dist)
+        else:
+            cube = Cube(3)
+            cube.scramble(text)
+            img = render_cube(cube, size=args.size, ss=args.ss, yaw=args.yaw,
+                              pitch=args.pitch, dist=args.dist, bg=bg,
+                              label=None if args.no_label else text.strip())
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
     img.save(out)
     print(out)
